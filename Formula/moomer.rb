@@ -13,6 +13,21 @@ class Moomer < Formula
     system "cargo", "install", *std_cargo_args
   end
 
+  def caveats
+    <<~EOS
+      moomer needs Screen Recording permission on first run:
+        System Settings -> Privacy & Security -> Screen Recording
+
+      To launch it with a global hotkey, use skhd:
+        brew install koekeishiya/formulae/skhd
+        mkdir -p ~/.config/skhd
+        echo 'cmd + shift - z : moomer' >> ~/.config/skhd/skhdrc
+        skhd --start-service
+      Then grant skhd Accessibility permission. Change "cmd + shift - z" to any
+      hotkey you like.
+    EOS
+  end
+
   test do
     assert_path_exists bin/"moomer"
   end
