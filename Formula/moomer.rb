@@ -37,8 +37,10 @@ class Moomer < Formula
   test do
     assert_equal "moomer 2.0.0", shell_output("#{bin}/moomer --version").strip
     assert_match "Usage: moomer", shell_output("#{bin}/moomer --help")
-    resources = prefix/"Moomer.app/Contents/Resources/Moomer_Moomer.bundle/Contents/Resources"
-    assert_path_exists resources/"Shaders/Zoom.metal"
+    resources = prefix/"Moomer.app/Contents/Resources/Moomer_Moomer.bundle"
+    assert_path_exists resources
+    # SwiftPM can produce a flat bundle or a Contents/Resources layout.
+    assert_equal 1, resources.glob("**/Shaders/Zoom.metal").length
     system "/usr/bin/codesign", "--verify", "--deep", "--strict", prefix/"Moomer.app"
   end
 end
