@@ -1,0 +1,26 @@
+name: Formula
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install-and-test:
+    runs-on: macos-15
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check formula style
+        run: brew style Formula/moomer.rb
+      - name: Install formula from this checkout
+        run: |
+          brew tap Borfak/moomer
+          cp "$GITHUB_WORKSPACE/Formula/moomer.rb" "$(brew --repository Borfak/moomer)/Formula/moomer.rb"
+          brew install --build-from-source Borfak/moomer/moomer
+      - name: Check CLI, resources, and signature
+        run: brew test Borfak/moomer/moomer

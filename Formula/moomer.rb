@@ -1,34 +1,43 @@
 class Moomer < Formula
-  desc "Freeze-frame screen zoomer for macOS"
+  desc "Native macOS screen zoomer with live capture"
   homepage "https://github.com/Borfak/moomer"
-  url "https://github.com/Borfak/moomer/archive/refs/tags/v0.1.0.tar.gz"
-  sha256 "276c762d742c9eddec06519d39f6da390e307cdbc8f570d330dc31acca2b1f27"
+  url "https://github.com/Borfak/moomer/archive/refs/tags/v2.0.0.tar.gz"
+  sha256 "227f056070a56c262f3593985e465294fdde9a195a092903d5207be5375c777e"
   license "MIT"
   head "https://github.com/Borfak/moomer.git", branch: "main"
 
-  depends_on "rust" => :build
-  depends_on :macos
+  depends_on xcode: ["16.0", :build]
+  depends_on macos: :sonoma
 
   def install
-    system "cargo", "install", *std_cargo_args
+    system "./scripts/build-app.sh", "--disable-sandbox", "--jobs", ENV.make_jobs.to_s
+    prefix.install "dist/Moomer.app"
+    bin.write_exec_script opt_prefix/"Moomer.app/Contents/MacOS/moomer"
   end
 
   def caveats
     <<~EOS
-      moomer needs Screen Recording permission on first run:
-        System Settings -> Privacy & Security -> Screen Recording
+      Moomer needs Screen Recording permission on first run:
+        System Settings -> Privacy & Security -> Screen & System Audio Recording
+      Relaunch after granting access. Local ad-hoc builds may need access
+      granted again after an upgrade.
 
-      To launch it with a global hotkey, use skhd:
-        brew install koekeishiya/formulae/skhd
-        mkdir -p ~/.config/skhd
-        echo 'cmd + shift - z : moomer' >> ~/.config/skhd/skhdrc
-        skhd --start-service
-      Then grant skhd Accessibility permission. Change "cmd + shift - z" to any
-      hotkey you like.
+      Start live capture:
+        open "#{opt_prefix}/Moomer.app" --args --live --fps auto
+
+      For Cmd+Shift+Z, add or replace the binding in ~/.config/skhd/skhdrc:
+        cmd + shift - z : /usr/bin/open "#{opt_prefix}/Moomer.app" --args --live --fps auto
+      Reload skhd after editing and grant it Accessibility permission.
+      This launches the Homebrew app; a manual /Applications copy is separate.
+
+      Space toggles live/freeze. Escape stops capture and exits Moomer.
     EOS
   end
 
   test do
-    assert_path_exists bin/"moomer"
+    assert_equal "moomer 2.0.0", shell_output("#{bin}/moomer --version").strip
+    assert_match "Usage: moomer", shell_output("#{bin}/moomer --help")
+    assert_path_exists prefix/"Moomer.app/Contents/Resources/Moomer_Moomer.bundle/Contents/Resources/Shaders/Zoom.metal"
+    system "/usr/bin/codesign", "--verify", "--deep", "--strict", prefix/"Moomer.app"
   end
 end
